@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Scam Awareness Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #87cefa, #f3f4f6);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            height: 90vh;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .platform {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 200px;
+            background: radial-gradient(circle, #8B4513, #5a3215);
+        }
+
+        .character {
+            position: absolute;
+            bottom: 20%;
+            width: 200px;
+            height: 300px;
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+
+        .character.computer {
+            left: 10%;
+            background-image: url('./scammer.png');
+        }
+
+        .character.user {
+            right: 10%;
+            background-image: url('./farmer_char.png');
+        }
+
+        .bubble {
+            position: absolute;
+            top: -150px; /* Adjusted to be 50px higher */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 16px;
+            color: #333;
+            display: none;
+        }
+
+        .options {
+            position: absolute;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .options button {
+            padding: 10px 20px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .options button:hover {
+            background: #0056b3;
+        }
+
+        .consequence {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            font-size: 16px;
+            color: #d32f2f;
+            text-align: center;
+            width: 300px;
+        }
+
+        .score {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 255, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="platform"></div>
+        <div class="character computer">
+            <div class="bubble" id="computerBubble"></div>
+        </div>
+        <div class="character user">
+            <div class="bubble" id="userBubble"></div>
+        </div>
+        <div class="options" id="optionsContainer"></div>
+        <div class="consequence" id="consequenceBox"></div>
+        <div class="score" id="scoreBox"></div>
+    </div>
+    
+    <!-- javascript -->
+    <script>
+        const conversations = [
+            {
+                message: "Let’s make this situation-type game where you match a scenario with the right scheme! Ready? Let’s go! 🌟",
+                answers: ['Start!', 'Exit']
+            },
+            {
+                message: "Situation 1: A farmer receives a call claiming to be from a bank. They offer a loan at a low-interest rate but ask for an upfront processing fee to be transferred to a private account.",
+                answers: ['Pay the fee immediately', 'Visit the bank to confirm', 'Provide bank details over the phone'],
+                correctAnswer: 'Visit the bank to confirm'
+            },
+            {
+                message: "Situation 2: A phishing email claims to be from SBI and says your account will be frozen unless you click a link and update your personal details. The email looks professional.",
+                answers: ['Click the link and update', 'Delete the email and ignore', 'Contact your bank to verify'],
+                correctAnswer: 'Contact your bank to verify'
+            },
+            {
+                message: "Situation 3: A friend tells you about an investment opportunity promising to double your money in a month. They say no paperwork is needed, just a cash deposit with a 'guarantee.'",
+                answers: ['Invest immediately', 'Research the scheme', 'Hand over the cash'],
+                correctAnswer: 'Research the scheme'
+            },
+            {
+                message: "Situation 4: You’re at an ATM, and you notice the card slot looks unusual and wobbly. You’re in a hurry to withdraw cash.",
+                answers: ['Use the ATM anyway', 'Look for another ATM and report', 'Ask the next person in line'],
+                correctAnswer: 'Look for another ATM and report'
+            },
+            {
+                message: "Situation 5: A call informs you that the government has introduced a scheme to waive off your bank loan. They ask for your loan account details and a small fee for 'processing.'",
+                answers: ['Share your loan details', 'Visit your bank to confirm', 'Block the caller and move on'],
+                correctAnswer: 'Visit your bank to confirm'
+            },
+            {
+                message: "Scenario 7: Online Shopping Fraud",
+                answers: ['Make the payment since it’s a great deal', 'Avoid the deal and look for reviews', 'Share your card details and make the purchase'],
+                correctAnswer: 'Avoid the deal and look for reviews'
+            }
+        ];
+
+        let conversationIndex = 0;
+        let score = 0;
+
+        const computerBubble = document.getElementById('computerBubble');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const consequenceBox = document.getElementById('consequenceBox');
+        const scoreBox = document.getElementById('scoreBox');
+
+        function nextConversation() {
+            if (conversationIndex < conversations.length) {
+                const convo = conversations[conversationIndex];
+                conversationIndex++;
+                computerBubble.innerHTML = convo.message.replace(/\n/g, '<br>');
+                computerBubble.style.display = 'block';
+
+                if (convo.answers) {
+                    displayOptions(convo.answers, convo.correctAnswer);
+                } else {
+                    optionsContainer.innerHTML = '';
+                }
+            } else {
+                showFinalScore();
+            }
+        }
+
+        function displayOptions(options, correctAnswer) {
+            optionsContainer.innerHTML = '';
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.onclick = () => {
+                    if (option === correctAnswer) {
+                        score++;
+                        showConsequence('You made the right choice! 💡');
+                    } else {
+                        showConsequence('Oops! That was a scam. 💔');
+                    }
+                    nextConversation();
+                };
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function showConsequence(message) {
+            consequenceBox.innerHTML = message;
+            consequenceBox.style.display = 'block';
+            setTimeout(() => {
+                consequenceBox.style.display = 'none';
+            }, 2000);
+        }
+
+        function showFinalScore() {
+            scoreBox.innerHTML = 🎉 Congratulations! Your final score is ${score}/${conversations.length - 1}. 🎉;
+            scoreBox.style.display = 'block';
+        }
+
+        nextConversation();
+    </script>
+</body>
+</html>
